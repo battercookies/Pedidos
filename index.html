@@ -54,6 +54,7 @@ input,select,textarea{width:100%;padding:10px;border:1px solid #D9C9B6;border-ra
 // ================= EDITE AQUI =================
 // IMPORTANTE: mantenha os sabores na MESMA ORDEM da aba Precificação da planilha.
 const WHATSAPP = "5531995553267"; // 55 + DDD + número, só números
+const PLANILHA = "https://script.google.com/macros/s/AKfycbzp7fDQ7C29i4F7KajOYYAzmkpzAVwbW9NwCnZAV5136317Gqlx9lKIIpqnSOwMjv73ow/exec"; // cole aqui o link do App da Web do Google (termina em /exec)
 const CARDAPIO = [
   {nome: "Tradicional", preco: 13.00, foto: "tradicional.jpg",
    descricao: "Massa amanteigada com açúcar mascavo e gotas de chocolate meio amargo. Crocante por fora, macio por dentro."},
@@ -131,6 +132,7 @@ function enviar() {
   const limpa = t => t.replace(/;/g, ",");
   const linha = [codigo, data, limpa(v("nome")), tel, v("pagamento"), v("entrega"), total.toFixed(2).replace(".", ","), ...qtd].join(";");
   msg = msg.replace("BATTER COOKIES*\n", `BATTER COOKIES*\n${linha}\n`);
+  if (PLANILHA) fetch(PLANILHA, {method: "POST", mode: "no-cors", body: JSON.stringify({codigo, data, nome: v("nome"), telefone: tel, pagamento: v("pagamento"), entrega: v("entrega"), total, endereco: entrega ? `${v("rua")}, ${v("numero")} ${v("complemento")} - ${v("bairro")}` : "", qtd})});
   window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`, "_blank");
 }
 desenhar();
