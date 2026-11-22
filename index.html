@@ -32,6 +32,7 @@ input,select,textarea{width:100%;padding:10px;border:1px solid #D9C9B6;border-ra
   <p class="sub">Escolha seus cookies e envie o pedido pelo WhatsApp</p>
   <div id="cardapio"></div>
   <label>Seu nome</label><input id="nome">
+  <label>Seu WhatsApp (com DDD)</label><input id="telefone" inputmode="tel" placeholder="(61) 99999-9999">
   <label>Entrega ou retirada</label>
   <select id="entrega" onchange="trocar()"><option>Entrega</option><option>Retirada</option></select>
   <div id="endereco">
@@ -105,6 +106,8 @@ function enviar() {
   const itens = CARDAPIO.map((c, i) => ({...c, q: qtd[i]})).filter(c => c.q > 0);
   if (!itens.length) { alert("Escolha pelo menos um cookie."); return; }
   if (!v("nome")) { alert("Preencha seu nome."); return; }
+  const tel = v("telefone").replace(/\D/g, "");
+  if (tel.length < 10) { alert("Preencha seu WhatsApp com DDD."); return; }
   const entrega = v("entrega") === "Entrega";
   if (entrega && (!v("rua") || !v("numero") || !v("bairro") || !v("cidade"))) {
     alert("Preencha o endereço: rua, número, bairro e cidade."); return;
@@ -115,7 +118,7 @@ function enviar() {
   const data = `${p(agora.getDate())}/${p(agora.getMonth() + 1)}/${agora.getFullYear()}`;
   let msg = `*NOVO PEDIDO ${codigo} — BATTER COOKIES*\n\n`;
   itens.forEach(c => msg += `${c.q}x ${c.nome} — ${real(c.preco * c.q)}\n`);
-  msg += `\n*Total: ${real(total)}*\n\nNome: ${v("nome")}\nEntrega: ${v("entrega")}`;
+  msg += `\n*Total: ${real(total)}*\n\nNome: ${v("nome")}\nWhatsApp: ${v("telefone")}\nEntrega: ${v("entrega")}`;
   if (entrega) {
     msg += `\nEndereço: ${v("rua")}, ${v("numero")}` + (v("complemento") ? ` — ${v("complemento")}` : "");
     msg += `\n${v("bairro")} — ${v("cidade")}/${v("uf").toUpperCase()}`;
@@ -124,10 +127,10 @@ function enviar() {
   }
   msg += `\nPagamento: ${v("pagamento")}`;
   if (v("obs")) msg += `\nObs.: ${v("obs")}`;
-  // Linha para a planilha: código;data;nome;pagamento;entrega;total;quantidade de cada sabor (na ordem do cardápio)
+  // Linha de dados (vai logo abaixo do título NOVO PEDIDO): código;data;nome;telefone;pagamento;entrega;total;quantidade de cada sabor (na ordem do cardápio)
   const limpa = t => t.replace(/;/g, ",");
-  const linha = [codigo, data, limpa(v("nome")), v("pagamento"), v("entrega"), total.toFixed(2).replace(".", ","), ...qtd].join(";");
-  msg += `\n\nPara a planilha:\n${linha}`;
+  const linha = [codigo, data, limpa(v("nome")), tel, v("pagamento"), v("entrega"), total.toFixed(2).replace(".", ","), ...qtd].join(";");
+  msg = msg.replace("BATTER COOKIES*\n", `BATTER COOKIES*\n${linha}\n`);
   window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`, "_blank");
 }
 desenhar();
