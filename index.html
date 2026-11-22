@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Batter Cookies — Faça seu pedido</title>
+<style>
+body{font-family:Arial,sans-serif;background:#F7EFE6;color:#5B3A29;margin:0;padding:16px}
+.box{max-width:480px;margin:auto}
+.sub{text-align:center;margin:0 0 16px}
+.item{background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;display:flex;gap:10px;align-items:center}
+.item img{width:72px;height:72px;object-fit:cover;border-radius:10px}
+.info{flex:1}
+.nome{font-weight:bold}
+.desc{font-size:13px;color:#7A5A48;margin:2px 0 4px}
+.preco{font-weight:bold}
+.qtd{white-space:nowrap}
+.qtd button{width:34px;height:34px;border:none;border-radius:50%;background:#5B3A29;color:#fff;font-size:18px}
+.qtd span{display:inline-block;width:28px;text-align:center;font-weight:bold}
+label{display:block;margin-top:12px;font-weight:bold}
+input,select,textarea{width:100%;padding:10px;border:1px solid #D9C9B6;border-radius:8px;box-sizing:border-box;font-size:16px}
+.linha{display:flex;gap:8px}
+.linha>div{flex:1}
+#cepmsg{font-size:13px;margin-top:4px}
+.total{font-size:20px;font-weight:bold;text-align:center;margin:16px 0}
+#enviar{width:100%;padding:14px;border:none;border-radius:10px;background:#25D366;color:#fff;font-size:18px;font-weight:bold}
+</style>
+</head>
+<body>
+<div class="box">
+  <img src="logo.jpg" alt="Batter Cookies" style="display:block;width:200px;max-width:60%;margin:0 auto 8px;mix-blend-mode:multiply">
+  <p class="sub">Escolha seus cookies e envie o pedido pelo WhatsApp</p>
+  <div id="cardapio"></div>
+  <label>Seu nome</label><input id="nome">
+  <label>Entrega ou retirada</label>
+  <select id="entrega" onchange="trocar()"><option>Entrega</option><option>Retirada</option></select>
+  <div id="endereco">
+    <label>CEP</label><input id="cep" inputmode="numeric" maxlength="9" placeholder="00000-000" oninput="buscarCep()">
+    <div id="cepmsg"></div>
+    <label>Rua</label><input id="rua">
+    <div class="linha"><div><label>Número</label><input id="numero"></div><div><label>Complemento</label><input id="complemento" placeholder="Bloco, apto, casa"></div></div>
+    <label>Bairro</label><input id="bairro">
+    <div class="linha"><div><label>Cidade</label><input id="cidade"></div><div style="flex:0 0 80px"><label>UF</label><input id="uf" maxlength="2"></div></div>
+    <label>Ponto de referência</label><input id="referencia">
+  </div>
+  <label>Forma de pagamento</label>
+  <select id="pagamento"><option>Pix</option><option>Dinheiro</option><option>Cartão de débito</option><option>Cartão de crédito</option></select>
+  <label>Observações</label><textarea id="obs" rows="2"></textarea>
+  <div class="total">Total: <span id="total">R$ 0,00</span></div>
+  <button id="enviar" onclick="enviar()">Enviar pedido pelo WhatsApp</button>
+</div>
+<script>
+// ================= EDITE AQUI =================
+const WHATSAPP = "5531995553267"; // 55 + DDD + número, só números
+const CARDAPIO = [
+  {nome: "Tradicional", preco: 13.00, foto: "tradicional.jpg",
+   descricao: "Massa amanteigada com açúcar mascavo e gotas de chocolate meio amargo. Crocante por fora, macio por dentro."},
+  {nome: "Nutella", preco: 16.00, foto: "nutella.jpg",
+   descricao: "Massa amanteigada com gotas de chocolate meio amargo e recheio cremoso de Nutella."},
+  {nome: "Kinder", preco: 17.00, foto: "kinder.jpg",
+   descricao: "Massa com gotas de chocolate ao leite e pedaços de chocolate Kinder."},
+  {nome: "Red Velvet", preco: 14.00, foto: "red-velvet.jpg",
+   descricao: "Massa aveludada de cacau, vermelhinha, com gotas de chocolate branco."}
+];
+// ==============================================
+const qtd = CARDAPIO.map(() => 0);
+const real = v => "R$ " + v.toFixed(2).replace(".", ",");
+const campo = id => document.getElementById(id);
+function trocar() {
+  campo("endereco").style.display = campo("entrega").value === "Entrega" ? "block" : "none";
+}
+async function buscarCep() {
+  const cep = campo("cep").value.replace(/\D/g, "");
+  const m = campo("cepmsg");
+  if (cep.length !== 8) { m.textContent = ""; return; }
+  m.textContent = "Buscando endereço...";
+  try {
+    const d = await (await fetch(`https://viacep.com.br/ws/${cep}/json/`)).json();
+    if (d.erro) { m.textContent = "CEP não encontrado. Preencha o endereço manualmente."; return; }
+    campo("rua").value = d.logradouro || "";
+    campo("bairro").value = d.bairro || "";
+    campo("cidade").value = d.localidade || "";
+    campo("uf").value = d.uf || "";
+    m.textContent = "Endereço encontrado. Confira e informe o número.";
+    campo("numero").focus();
+  } catch (e) {
+    m.textContent = "Não foi possível buscar o CEP agora. Preencha manualmente.";
+  }
+}
+function desenhar() {
+  campo("cardapio").innerHTML = CARDAPIO.map((c, i) =>
+    `<div class="item">` +
+    (c.foto ? `<img src="${c.foto}" alt="${c.nome}" onerror="this.style.display='none'">` : "") +
+    `<div class="info"><div class="nome">${c.nome}</div><div class="desc">${c.descricao || ""}</div>` +
+    `<div class="preco">${real(c.preco)}</div></div>` +
+    `<div class="qtd"><button onclick="mudar(${i},-1)">−</button><span>${qtd[i]}</span>` +
+    `<button onclick="mudar(${i},1)">+</button></div></div>`).join("");
+  const total = CARDAPIO.reduce((s, c, i) => s + c.preco * qtd[i], 0);
+  campo("total").textContent = real(total);
+}
+function mudar(i, d) { qtd[i] = Math.max(0, qtd[i] + d); desenhar(); }
+function enviar() {
+  const v = id => campo(id).value.trim();
+  const itens = CARDAPIO.map((c, i) => ({...c, q: qtd[i]})).filter(c => c.q > 0);
+  if (!itens.length) { alert("Escolha pelo menos um cookie."); return; }
+  if (!v("nome")) { alert("Preencha seu nome."); return; }
+  const entrega = v("entrega") === "Entrega";
+  if (entrega && (!v("rua") || !v("numero") || !v("bairro") || !v("cidade"))) {
+    alert("Preencha o endereço: rua, número, bairro e cidade."); return;
+  }
+  const total = itens.reduce((s, c) => s + c.preco * c.q, 0);
+  let msg = "*NOVO PEDIDO — BATTER COOKIES*\n\n";
+  itens.forEach(c => msg += `${c.q}x ${c.nome} — ${real(c.preco * c.q)}\n`);
+  msg += `\n*Total: ${real(total)}*\n\nNome: ${v("nome")}\nEntrega: ${v("entrega")}`;
+  if (entrega) {
+    msg += `\nEndereço: ${v("rua")}, ${v("numero")}` + (v("complemento") ? ` — ${v("complemento")}` : "");
+    msg += `\n${v("bairro")} — ${v("cidade")}/${v("uf").toUpperCase()}`;
+    if (v("cep")) msg += `\nCEP: ${v("cep")}`;
+    if (v("referencia")) msg += `\nReferência: ${v("referencia")}`;
+  }
+  msg += `\nPagamento: ${v("pagamento")}`;
+  if (v("obs")) msg += `\nObs.: ${v("obs")}`;
+  window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`, "_blank");
+}
+desenhar();
+</script>
+</body>
+</html>
