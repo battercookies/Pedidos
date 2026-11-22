@@ -51,6 +51,7 @@ input,select,textarea{width:100%;padding:10px;border:1px solid #D9C9B6;border-ra
 </div>
 <script>
 // ================= EDITE AQUI =================
+// IMPORTANTE: mantenha os sabores na MESMA ORDEM da aba Precificação da planilha.
 const WHATSAPP = "5531995553267"; // 55 + DDD + número, só números
 const CARDAPIO = [
   {nome: "Tradicional", preco: 13.00, foto: "tradicional.jpg",
@@ -109,7 +110,10 @@ function enviar() {
     alert("Preencha o endereço: rua, número, bairro e cidade."); return;
   }
   const total = itens.reduce((s, c) => s + c.preco * c.q, 0);
-  let msg = "*NOVO PEDIDO — BATTER COOKIES*\n\n";
+  const agora = new Date(), p = n => String(n).padStart(2, "0");
+  const codigo = `${p(agora.getDate())}${p(agora.getMonth() + 1)}-${p(agora.getHours())}${p(agora.getMinutes())}${p(agora.getSeconds())}`;
+  const data = `${p(agora.getDate())}/${p(agora.getMonth() + 1)}/${agora.getFullYear()}`;
+  let msg = `*NOVO PEDIDO ${codigo} — BATTER COOKIES*\n\n`;
   itens.forEach(c => msg += `${c.q}x ${c.nome} — ${real(c.preco * c.q)}\n`);
   msg += `\n*Total: ${real(total)}*\n\nNome: ${v("nome")}\nEntrega: ${v("entrega")}`;
   if (entrega) {
@@ -120,6 +124,10 @@ function enviar() {
   }
   msg += `\nPagamento: ${v("pagamento")}`;
   if (v("obs")) msg += `\nObs.: ${v("obs")}`;
+  // Linha para a planilha: código;data;nome;pagamento;entrega;total;quantidade de cada sabor (na ordem do cardápio)
+  const limpa = t => t.replace(/;/g, ",");
+  const linha = [codigo, data, limpa(v("nome")), v("pagamento"), v("entrega"), total.toFixed(2).replace(".", ","), ...qtd].join(";");
+  msg += `\n\nPara a planilha:\n${linha}`;
   window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`, "_blank");
 }
 desenhar();
